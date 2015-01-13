@@ -167,7 +167,7 @@ else:
 
 setup(
     name=NAME,
-    version=meta['VERSION'],
+    version='3.1.16machtfit1',
     description=meta['doc'],
     author=meta['author'],
     author_email=meta['contact'],
