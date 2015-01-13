@@ -254,6 +254,7 @@ class PeriodicTask(models.Model):
     class Meta:
         verbose_name = _('periodic task')
         verbose_name_plural = _('periodic tasks')
+        permissions = [('can_run_periodic_task', _('Can run periodic task'))]
 
     def validate_unique(self, *args, **kwargs):
         super(PeriodicTask, self).validate_unique(*args, **kwargs)

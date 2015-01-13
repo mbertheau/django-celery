@@ -4,7 +4,7 @@ from anyjson import loads
 
 from django import forms
 from django.conf import settings
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from django.contrib.admin.views import main as main_views
 from django.forms.widgets import Select
@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from celery import current_app
 from celery import states
+from celery.execute import send_task
 from celery.task.control import broadcast, revoke, rate_limit
 from celery.utils import cached_property
 from celery.utils.text import abbrtask
@@ -319,6 +320,7 @@ class PeriodicTaskAdmin(admin.ModelAdmin):
     form = PeriodicTaskForm
     model = PeriodicTask
     list_display = ('__unicode__', 'enabled')
+    actions = ['run_task']
     fieldsets = (
         (None, {
             'fields': ('name', 'regtask', 'task', 'enabled'),
@@ -348,6 +350,18 @@ class PeriodicTaskAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super(PeriodicTaskAdmin, self).get_queryset(request)
         return qs.select_related('interval', 'crontab')
+
+    def run_task(self, request, queryset):
+        if not request.user.has_perm('djcelery.can_run_periodic_task'):
+            self.message_user(
+                request, "You don't have sufficient permissions"
+                " to perform this action.", messages.WARNING)
+            return
+
+        for task in queryset.all():
+            send_task(task.task)
+        self.message_user(request, 'Tasks are running')
+    run_task.short_description = 'Run Task'
 
 
 admin.site.register(IntervalSchedule)
